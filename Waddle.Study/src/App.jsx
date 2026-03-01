@@ -1,94 +1,137 @@
-import { useRef, useState } from 'react';
-
-import Phaser from 'phaser';
+import { useRef, useEffect } from 'react';
 import { PhaserGame } from './PhaserGame';
+import { useAuth } from './contexts/AuthContext';
+import { useGame } from './contexts/GameContext';
 
-function App ()
-{
-    // The sprite can only be moved in the MainMenu Scene
-    const [canMoveSprite, setCanMoveSprite] = useState(true);
-    
-    //  References to the PhaserGame component (game and scene are exposed)
+import LoginScreen from './components/LoginScreen';
+import RoleSelect from './components/RoleSelect';
+import HubScreen from './components/HubScreen';
+import Workshop from './components/Workshop';
+import QuestionSets from './components/QuestionSets';
+import QuizGame from './components/QuizGame';
+import QuizResults from './components/QuizResults';
+import DojoStudent from './components/DojoStudent';
+import DojoTeacher from './components/DojoTeacher';
+import Shop from './components/Shop';
+import CollectionPond from './components/CollectionPond';
+import EggOpening from './components/EggOpening';
+import Settings from './components/Settings';
+import AtlasPlaceholder from './components/AtlasPlaceholder';
+
+const SCENE_MAP = {
+    LOGIN: 'TitleScene',
+    ROLE_SELECT: 'TitleScene',
+    HUB: 'HubScene',
+    WORKSHOP: 'HubScene',
+    QUESTION_SETS: 'HubScene',
+    QUIZ: 'QuizScene',
+    QUIZ_RESULTS: 'HubScene',
+    DOJO: 'HubScene',
+    SHOP: 'HubScene',
+    COLLECTION: 'HubScene',
+    EGG_OPENING: 'HubScene',
+    SETTINGS: 'HubScene',
+    ATLAS: 'HubScene',
+};
+
+function App() {
     const phaserRef = useRef();
-    const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
+    const { firebaseUser, userData, loading, needsRoleSelect } = useAuth();
+    const { currentScreen, screenData } = useGame();
 
-    const changeScene = () => {
+    // Sync Phaser scene with current screen — uses game instance directly
+    useEffect(() => {
+        const game = phaserRef.current?.game;
+        if (!game || !game.scene) return;
 
-        const scene = phaserRef.current.scene;
+        const targetScene = SCENE_MAP[currentScreen] || 'HubScene';
+        const activeScenes = game.scene.getScenes(true);
+        const isTargetActive = activeScenes.some(s => s.scene.key === targetScene);
 
-        if (scene)
-        {
-            scene.changeScene();
+        if (!isTargetActive) {
+            try {
+                game.scene.start(targetScene);
+                // Stop other scenes that aren't the target
+                activeScenes.forEach(s => {
+                    if (s.scene.key !== targetScene && s.scene.key !== 'Boot' && s.scene.key !== 'Preloader') {
+                        game.scene.stop(s.scene.key);
+                    }
+                });
+            } catch (e) {
+                // Scene transition may fail during init
+            }
         }
-    }
+    }, [currentScreen]);
 
-    const moveSprite = () => {
+    const handleSceneReady = () => {};
 
-        const scene = phaserRef.current.scene;
+    function renderScreen() {
+        if (loading) return <LoadingScreen />;
+        if (!firebaseUser) return <LoginScreen />;
+        if (needsRoleSelect) return <RoleSelect />;
+        if (!userData) return <LoadingScreen />;
 
-        if (scene && scene.scene.key === 'MainMenu')
-        {
-            // Get the update logo position
-            scene.moveLogo(({ x, y }) => {
-
-                setSpritePosition({ x, y });
-
-            });
+        switch (currentScreen) {
+            case 'HUB':
+                return <HubScreen />;
+            case 'WORKSHOP':
+                return <Workshop />;
+            case 'QUESTION_SETS':
+                return <QuestionSets />;
+            case 'QUIZ': {
+                const data = screenData.QUIZ || {};
+                return (
+                    <QuizGame
+                        setId={data.setId}
+                        dojoId={data.dojoId}
+                        isMandatory={data.isMandatory}
+                        isBonusBounty={data.isBonusBounty}
+                    />
+                );
+            }
+            case 'QUIZ_RESULTS': {
+                const data = screenData.QUIZ_RESULTS || {};
+                return <QuizResults result={data.result} />;
+            }
+            case 'DOJO':
+                return userData.role === 'teacher' ? <DojoTeacher /> : <DojoStudent />;
+            case 'SHOP':
+                return <Shop />;
+            case 'COLLECTION':
+                return <CollectionPond />;
+            case 'EGG_OPENING': {
+                const data = screenData.EGG_OPENING || {};
+                return <EggOpening egg={data.egg} />;
+            }
+            case 'SETTINGS':
+                return <Settings />;
+            case 'ATLAS':
+                return <AtlasPlaceholder />;
+            default:
+                return <HubScreen />;
         }
-    }
-
-    const addSprite = () => {
-
-        const scene = phaserRef.current.scene;
-
-        if (scene)
-        {
-            // Add more stars
-            const x = Phaser.Math.Between(64, scene.scale.width - 64);
-            const y = Phaser.Math.Between(64, scene.scale.height - 64);
-
-            //  `add.sprite` is a Phaser GameObjectFactory method and it returns a Sprite Game Object instance
-            const star = scene.add.sprite(x, y, 'star');
-
-            //  ... which you can then act upon. Here we create a Phaser Tween to fade the star sprite in and out.
-            //  You could, of course, do this from within the Phaser Scene code, but this is just an example
-            //  showing that Phaser objects and systems can be acted upon from outside of Phaser itself.
-            scene.add.tween({
-                targets: star,
-                duration: 500 + Math.random() * 1000,
-                alpha: 0,
-                yoyo: true,
-                repeat: -1
-            });
-        }
-    }
-
-    // Event emitted from the PhaserGame component
-    const currentScene = (scene) => {
-
-        setCanMoveSprite(scene.scene.key !== 'MainMenu');
-        
     }
 
     return (
         <div id="app">
-            <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
-            <div>
-                <div>
-                    <button className="button" onClick={changeScene}>Change Scene</button>
-                </div>
-                <div>
-                    <button disabled={canMoveSprite} className="button" onClick={moveSprite}>Toggle Movement</button>
-                </div>
-                <div className="spritePosition">Sprite Position:
-                    <pre>{`{\n  x: ${spritePosition.x}\n  y: ${spritePosition.y}\n}`}</pre>
-                </div>
-                <div>
-                    <button className="button" onClick={addSprite}>Add New Sprite</button>
-                </div>
+            <PhaserGame ref={phaserRef} currentActiveScene={handleSceneReady} />
+            <div id="ui-overlay">
+                {renderScreen()}
             </div>
         </div>
-    )
+    );
 }
 
-export default App
+function LoadingScreen() {
+    return (
+        <div className="waddle-overlay loading-screen">
+            <div className="loading-content">
+                <h2 className="loading-title">WADDLE</h2>
+                <div className="loading-spinner" />
+                <p>Loading...</p>
+            </div>
+        </div>
+    );
+}
+
+export default App;
