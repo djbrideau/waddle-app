@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import DuckDisplay from './DuckDisplay';
 import { getEggById } from '../data/eggDatabase';
 import { RARITY_COLORS } from '../data/duckDatabase';
 
 export default function EggOpening({ egg }) {
-    const { goBack, openEgg, navigate } = useGame();
+    const { openEgg, navigate, setCurrentScreen } = useGame();
     const [phase, setPhase] = useState('ready'); // ready | cracking | reveal
     const [duck, setDuck] = useState(null);
     const [eggInfo] = useState(() => getEggById(egg?.eggId));
@@ -14,7 +14,7 @@ export default function EggOpening({ egg }) {
         if (!egg) return;
         setPhase('cracking');
 
-        // Simulate cracking animation delay (placeholder for real animation)
+        // Simulate cracking animation delay
         await new Promise(r => setTimeout(r, 1500));
 
         const result = await openEgg(egg);
@@ -22,11 +22,16 @@ export default function EggOpening({ egg }) {
         setPhase('reveal');
     }
 
+    // Navigate back to collection — use setCurrentScreen directly to avoid stack issues
+    function handleBack() {
+        setCurrentScreen('COLLECTION');
+    }
+
     if (!egg) {
         return (
             <div className="waddle-overlay egg-screen">
                 <p>No egg selected.</p>
-                <button className="waddle-btn" onClick={goBack}>Back</button>
+                <button className="waddle-btn" onClick={handleBack}>Back</button>
             </div>
         );
     }
@@ -45,7 +50,7 @@ export default function EggOpening({ egg }) {
                     <h3>{eggInfo?.name || egg.eggId}</h3>
                     <p>{eggInfo?.description || 'Tap to hatch!'}</p>
                     <div className="egg-actions">
-                        <button className="waddle-btn" onClick={goBack}>Not Yet</button>
+                        <button className="waddle-btn" onClick={handleBack}>Not Yet</button>
                         <button className="waddle-btn waddle-btn-primary" onClick={handleOpen}>
                             Hatch!
                         </button>
@@ -76,13 +81,13 @@ export default function EggOpening({ egg }) {
                     />
                     <h2 className="reveal-name">{duck.name}</h2>
                     <p className="reveal-rarity" style={{ color: RARITY_COLORS[duck.rarity] }}>
-                        {duck.isDazzling && '✨ Dazzling '}{duck.rarity.toUpperCase()}
+                        {duck.isDazzling && 'Dazzling '}{duck.rarity.toUpperCase()}
                     </p>
                     <div className="egg-actions">
                         <button className="waddle-btn" onClick={() => navigate('COLLECTION')}>
                             View Collection
                         </button>
-                        <button className="waddle-btn waddle-btn-primary" onClick={goBack}>
+                        <button className="waddle-btn waddle-btn-primary" onClick={() => setCurrentScreen('HUB')}>
                             Continue
                         </button>
                     </div>

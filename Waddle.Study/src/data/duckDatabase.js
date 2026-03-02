@@ -3,6 +3,7 @@
 // Real art will replace these later
 
 export const RARITY = {
+    STARTER: 'starter',
     COMMON: 'common',
     RARE: 'rare',
     EPIC: 'epic',
@@ -10,6 +11,7 @@ export const RARITY = {
 };
 
 export const RARITY_COLORS = {
+    [RARITY.STARTER]: '#ffeb3b',
     [RARITY.COMMON]: '#a5d6a7',
     [RARITY.RARE]: '#29b6f6',
     [RARITY.EPIC]: '#ab47bc',
@@ -25,8 +27,19 @@ export const RARITY_DROP_RATES = {
 
 export const DAZZLING_CHANCE = 0.01; // 1% chance for dazzling variant
 
+// The Classic — starter duck given to all players
+export const THE_CLASSIC = {
+    id: 'duck_classic',
+    name: 'The Classic',
+    rarity: RARITY.STARTER,
+    color: '#ffeb3b',
+};
+
 // Placeholder ducks — 20 Common, 10 Rare, 6 Epic, 4 Legendary
 export const DUCK_POOL = [
+    // ─── Starter ─────────────────────────────────────────────
+    THE_CLASSIC,
+
     // ─── Common (20) ───────────────────────────────────────
     { id: 'duck_c01', name: 'Puddle Duck #1',  rarity: RARITY.COMMON, color: '#80cbc4' },
     { id: 'duck_c02', name: 'Puddle Duck #2',  rarity: RARITY.COMMON, color: '#a5d6a7' },

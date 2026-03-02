@@ -24,11 +24,6 @@ export function calculateDuckBucks(correctAnswers, totalQuestions, options = {})
     return base;
 }
 
-// Perfect score = golden egg
-export function earnedGoldenEgg(correctAnswers, totalQuestions) {
-    return totalQuestions > 0 && correctAnswers === totalQuestions;
-}
-
 // Shop pricing helpers
 export const SHOP_CONFIG = {
     RESTOCK_HOUR: 0, // Midnight UTC

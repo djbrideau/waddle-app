@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { getUser, createUser, isTeacherWhitelisted, isAdmin } from '../firebase/firestore';
+import { getUser, createUser, isTeacherWhitelisted, isAdmin, addDuckToInventory } from '../firebase/firestore';
 import { signInWithGoogle, signOut } from '../firebase/auth';
+import { THE_CLASSIC } from '../data/duckDatabase';
 
 const AuthContext = createContext(null);
 
@@ -16,8 +17,25 @@ export function AuthProvider({ children }) {
         const unsub = onAuthStateChanged(auth, async (user) => {
             setFirebaseUser(user);
             if (user) {
-                const data = await getUser(user.uid);
+                let data = await getUser(user.uid);
                 if (data) {
+                    // Ensure existing users have The Classic duck
+                    const hasClassic = (data.inventory?.ducks || []).some(
+                        d => d.duckId === THE_CLASSIC.id
+                    );
+                    if (!hasClassic) {
+                        const classicDuck = {
+                            instanceId: `duck_classic_starter`,
+                            duckId: THE_CLASSIC.id,
+                            name: THE_CLASSIC.name,
+                            rarity: THE_CLASSIC.rarity,
+                            color: THE_CLASSIC.color,
+                            isDazzling: false,
+                            obtainedAt: Date.now(),
+                        };
+                        await addDuckToInventory(user.uid, classicDuck);
+                        data = await getUser(user.uid);
+                    }
                     setUserData(data);
                     setNeedsRoleSelect(false);
                 } else {

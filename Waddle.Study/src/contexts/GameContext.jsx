@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 import { useAuth } from './AuthContext';
 import * as db from '../firebase/firestore';
 import { rollDuck, rollRewardEgg, rollQuizRewardType } from '../data/gacha';
-import { calculateDuckBucks, earnedGoldenEgg } from '../utils/economy';
+import { calculateDuckBucks } from '../utils/economy';
 
 const GameContext = createContext(null);
 
@@ -52,12 +52,6 @@ export function GameProvider({ children }) {
         return success;
     }, [uid, refreshUser]);
 
-    const addGolden = useCallback(async (amount) => {
-        if (!uid) return;
-        await db.addGoldenEggs(uid, amount);
-        await refreshUser();
-    }, [uid, refreshUser]);
-
     // Inventory
     const openEgg = useCallback(async (eggInstance) => {
         if (!uid) return null;
@@ -94,7 +88,6 @@ export function GameProvider({ children }) {
             rewardType,
             duckBucks: 0,
             egg: null,
-            goldenEgg: false,
         };
 
         if (rewardType === 'egg') {
@@ -110,12 +103,6 @@ export function GameProvider({ children }) {
             result.duckBucks = bucks;
         }
 
-        // Perfect score = golden egg currency
-        if (earnedGoldenEgg(correct, total)) {
-            await db.addGoldenEggs(uid, 1);
-            result.goldenEgg = true;
-        }
-
         // Save result record
         await db.saveQuizResult(uid, {
             setId,
@@ -126,7 +113,6 @@ export function GameProvider({ children }) {
             rewardType,
             duckBucks: result.duckBucks,
             eggId: result.egg?.eggId || null,
-            goldenEgg: result.goldenEgg,
         });
 
         await refreshUser();
@@ -157,7 +143,6 @@ export function GameProvider({ children }) {
         goBack,
         // Economy
         duckBucks: userData?.economy?.duckBucks || 0,
-        goldenEggs: userData?.economy?.goldenEggs || 0,
         ducks: userData?.inventory?.ducks || [],
         eggs: userData?.inventory?.eggs || [],
         displayDuckId: userData?.profile?.displayDuckId || null,
@@ -165,7 +150,6 @@ export function GameProvider({ children }) {
         // Actions
         addBucks,
         spendBucks,
-        addGolden,
         openEgg,
         addEgg,
         setDisplayDuck,

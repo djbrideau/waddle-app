@@ -5,14 +5,29 @@ import {
     runTransaction
 } from 'firebase/firestore';
 import { db } from './config';
+import { THE_CLASSIC } from '../data/duckDatabase';
+
+// Create the starter duck instance for new users
+function createClassicDuck() {
+    return {
+        instanceId: `duck_classic_starter`,
+        duckId: THE_CLASSIC.id,
+        name: THE_CLASSIC.name,
+        rarity: THE_CLASSIC.rarity,
+        color: THE_CLASSIC.color,
+        isDazzling: false,
+        obtainedAt: Date.now(),
+    };
+}
 
 // ─── User Operations ───────────────────────────────────────────────
 export async function createUser(uid, role, displayName) {
+    const classicDuck = createClassicDuck();
     await setDoc(doc(db, 'users', uid), {
         role,
-        profile: { displayName, displayDuckId: null },
-        economy: { duckBucks: 0, goldenEggs: 0 },
-        inventory: { ducks: [], eggs: [] },
+        profile: { displayName, displayDuckId: classicDuck.instanceId },
+        economy: { duckBucks: 0 },
+        inventory: { ducks: [classicDuck], eggs: [] },
         enrolledDojos: [],
         createdAt: serverTimestamp(),
     });
@@ -47,12 +62,6 @@ export async function spendDuckBucks(uid, amount) {
     } catch {
         return false;
     }
-}
-
-export async function addGoldenEggs(uid, amount) {
-    await updateDoc(doc(db, 'users', uid), {
-        'economy.goldenEggs': increment(amount),
-    });
 }
 
 export async function addDuckToInventory(uid, duck) {
