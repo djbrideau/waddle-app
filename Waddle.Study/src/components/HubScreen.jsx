@@ -3,9 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import DuckDisplay from './DuckDisplay';
 import { EventBus } from '../game/EventBus';
+import { getDuckById } from '../data/duckDatabase';
 
 export default function HubScreen() {
-    const { displayName, role, logout } = useAuth();
+    const { displayName } = useAuth();
     const {
         navigate, duckBucks, ducks, displayDuckId, setDisplayDuck,
     } = useGame();
@@ -13,6 +14,17 @@ export default function HubScreen() {
     const [nearZone, setNearZone] = useState(null);
 
     const displayDuck = ducks.find(d => d.instanceId === displayDuckId);
+
+    // Sync display duck appearance to Phaser on mount and when it changes
+    useEffect(() => {
+        if (displayDuck) {
+            const dbDuck = getDuckById(displayDuck.duckId);
+            EventBus.emit('display-duck-changed', {
+                color: dbDuck?.color || displayDuck.color || '#ffeb3b',
+                name: displayDuck.name || 'Duck',
+            });
+        }
+    }, [displayDuck?.instanceId]);
 
     // Listen for proximity events from Phaser HubScene
     useEffect(() => {
@@ -47,6 +59,17 @@ export default function HubScreen() {
         };
     }, [navigate]);
 
+    // Format zone name for display
+    const zoneDisplayNames = {
+        workshop: 'Workshop',
+        dojo: 'Duck Dojo',
+        atlas: 'Atlas',
+        quizzes: 'Quizzes',
+        shop: 'Shop',
+        collection: 'Collection',
+        settings: 'Settings',
+    };
+
     return (
         <div className="waddle-overlay hub-screen">
             {/* HUD - Top corners */}
@@ -67,7 +90,7 @@ export default function HubScreen() {
             {nearZone && (
                 <div className="proximity-prompt">
                     <span className="proximity-label">
-                        Press SPACE or click to enter {nearZone.charAt(0).toUpperCase() + nearZone.slice(1)}
+                        Press SPACE or click to enter {zoneDisplayNames[nearZone] || nearZone}
                     </span>
                 </div>
             )}

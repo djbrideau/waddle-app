@@ -3,14 +3,17 @@ import Phaser from 'phaser';
 
 const { Scene } = Phaser;
 
-// Zone definitions: positions around the pool for menu landmarks
+// Zone layout:
+//   Shop (top-left)       Collection (top-right)
+//   Atlas (left)          Duck Dojo (right)
+//   Workshop (bot-left)   Quizzes (bot-right)
 const ZONES = [
-    { name: 'workshop',  x: 320, y: 40,  label: 'Workshop' },
-    { name: 'dojo',      x: 320, y: 320, label: 'Duck Dojo' },
-    { name: 'atlas',     x: 50,  y: 180, label: 'Atlas' },
-    { name: 'quizzes',   x: 590, y: 180, label: 'Quizzes' },
-    { name: 'shop',      x: 100, y: 50,  label: 'Shop' },
-    { name: 'collection',x: 540, y: 320, label: 'Collection' },
+    { name: 'shop',       x: 110, y: 55,  label: 'Shop',       icon: '\u{1F6D2}' },
+    { name: 'collection', x: 530, y: 55,  label: 'Collection', icon: '\u{1F426}' },
+    { name: 'atlas',      x: 60,  y: 180, label: 'Atlas',      icon: '\u{1F30E}' },
+    { name: 'dojo',       x: 580, y: 180, label: 'Duck Dojo',  icon: '\u{1F3CB}' },
+    { name: 'workshop',   x: 110, y: 305, label: 'Workshop',   icon: '\u270E'    },
+    { name: 'quizzes',    x: 530, y: 305, label: 'Quizzes',    icon: '\u2753'    },
 ];
 
 const ZONE_RADIUS = 50;
@@ -98,61 +101,41 @@ export class HubScene extends Scene {
             }).setOrigin(0.5);
 
             // Zone icon
-            const icons = {
-                workshop: '✎', dojo: '🏋', atlas: '🌎',
-                quizzes: '❓', shop: '🛒', collection: '🐦',
-            };
-            this.add.text(zone.x, zone.y, icons[zone.name] || '●', {
+            this.add.text(zone.x, zone.y, zone.icon, {
                 fontSize: '20px',
             }).setOrigin(0.5);
         });
 
-        // Create player duck (simple graphic)
-        this.playerDuck = this.add.container(w / 2, h / 2);
+        // ─── Player duck ───────────────────────────────────────
+        // Use a container that holds the duck graphic. Movement changes
+        // the container position; a separate bob offset is applied to a
+        // child so it doesn't fight with the position logic.
+        this.duckX = w / 2;
+        this.duckY = h / 2;
+        this.bobOffset = 0;
 
-        // Duck body
-        const duckGfx = this.add.graphics();
-        // Body
-        duckGfx.fillStyle(0xffeb3b);
-        duckGfx.fillEllipse(0, 4, 24, 20);
-        // Head
-        duckGfx.fillStyle(0xffeb3b);
-        duckGfx.fillCircle(0, -8, 10);
-        // Beak
-        duckGfx.fillStyle(0xffb300);
-        duckGfx.fillEllipse(0, -4, 8, 4);
-        // Eyes
-        duckGfx.fillStyle(0x121212);
-        duckGfx.fillCircle(-3, -10, 2);
-        duckGfx.fillCircle(3, -10, 2);
-        // Eye shine
-        duckGfx.fillStyle(0xffffff);
-        duckGfx.fillCircle(-2.5, -10.5, 0.8);
-        duckGfx.fillCircle(3.5, -10.5, 0.8);
+        this.playerDuck = this.add.container(this.duckX, this.duckY);
 
-        this.playerDuck.add(duckGfx);
+        // Inner container that bobs (child of playerDuck)
+        this.duckInner = this.add.container(0, 0);
+        this.playerDuck.add(this.duckInner);
 
-        // Name label under duck
-        const nameLabel = this.add.text(0, 18, 'You', {
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '6px',
-            color: '#ffffff',
-            stroke: '#003b59',
-            strokeThickness: 2,
-        }).setOrigin(0.5);
-        this.playerDuck.add(nameLabel);
+        // Draw the duck with a given color (default yellow)
+        this.duckColor = 0xffeb3b;
+        this.duckName = 'The Classic';
+        this._drawDuck();
 
-        // Bob animation
+        // Bob tween — only affects the inner container's y
         this.tweens.add({
-            targets: this.playerDuck,
-            y: this.playerDuck.y - 3,
+            targets: this.duckInner,
+            y: -3,
             duration: 1000,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut',
         });
 
-        // Input — keyboard
+        // ─── Input — keyboard ──────────────────────────────────
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = {
             up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -164,7 +147,6 @@ export class HubScene extends Scene {
 
         // Input — click to move
         this.input.on('pointerdown', (pointer) => {
-            // Check if duck is near a zone — if so, activate the zone instead
             if (this.currentZone) {
                 EventBus.emit('zone-activate', this.currentZone);
                 return;
@@ -179,7 +161,66 @@ export class HubScene extends Scene {
             }
         });
 
+        // ─── Listen for duck-changed from React ────────────────
+        EventBus.on('display-duck-changed', this._onDuckChanged, this);
+
         EventBus.emit('current-scene-ready', this);
+    }
+
+    /** Redraws the duck graphic inside duckInner */
+    _drawDuck() {
+        this.duckInner.removeAll(true);
+
+        const gfx = this.add.graphics();
+        const c = this.duckColor;
+
+        // Body
+        gfx.fillStyle(c);
+        gfx.fillEllipse(0, 4, 24, 20);
+        // Head
+        gfx.fillStyle(c);
+        gfx.fillCircle(0, -8, 10);
+        // Beak
+        gfx.fillStyle(0xffb300);
+        gfx.fillEllipse(0, -4, 8, 4);
+        // Eyes
+        gfx.fillStyle(0x121212);
+        gfx.fillCircle(-3, -10, 2);
+        gfx.fillCircle(3, -10, 2);
+        // Eye shine
+        gfx.fillStyle(0xffffff);
+        gfx.fillCircle(-2.5, -10.5, 0.8);
+        gfx.fillCircle(3.5, -10.5, 0.8);
+        // Wing (slightly darker shade implied by opacity)
+        gfx.fillStyle(c, 0.7);
+        gfx.fillEllipse(-7, 3, 10, 14);
+        // Tail
+        gfx.fillStyle(c, 0.8);
+        gfx.fillTriangle(12, 0, 18, -6, 16, 4);
+
+        this.duckInner.add(gfx);
+
+        // Name label under duck
+        const label = this.add.text(0, 18, this.duckName, {
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: '6px',
+            color: '#ffffff',
+            stroke: '#003b59',
+            strokeThickness: 2,
+        }).setOrigin(0.5);
+        this.duckInner.add(label);
+    }
+
+    /** Called when React emits a duck change */
+    _onDuckChanged({ color, name }) {
+        // Convert hex color string (#rrggbb) to Phaser integer
+        if (color) {
+            this.duckColor = Phaser.Display.Color.HexStringToColor(color).color;
+        }
+        if (name) {
+            this.duckName = name;
+        }
+        this._drawDuck();
     }
 
     update(time, delta) {
@@ -206,8 +247,8 @@ export class HubScene extends Scene {
 
         // Click-to-move
         if (this.moveTarget && vx === 0 && vy === 0) {
-            const dx = this.moveTarget.x - this.playerDuck.x;
-            const dy = this.moveTarget.y - this.playerDuck.y;
+            const dx = this.moveTarget.x - this.duckX;
+            const dy = this.moveTarget.y - this.duckY;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist > 4) {
@@ -218,31 +259,35 @@ export class HubScene extends Scene {
             }
         }
 
-        // Normalize diagonal movement
+        // Apply movement
         if (vx !== 0 || vy !== 0) {
             const len = Math.sqrt(vx * vx + vy * vy);
-            vx = (vx / len) * DUCK_SPEED * dt;
-            vy = (vy / len) * DUCK_SPEED * dt;
+            const moveX = (vx / len) * DUCK_SPEED * dt;
+            const moveY = (vy / len) * DUCK_SPEED * dt;
 
-            this.playerDuck.x += vx;
-            this.playerDuck.y += vy;
+            this.duckX += moveX;
+            this.duckY += moveY;
 
-            // Flip duck based on direction
+            // Flip duck based on horizontal direction
             if (vx < -0.1) this.playerDuck.setScale(-1, 1);
             else if (vx > 0.1) this.playerDuck.setScale(1, 1);
         }
 
         // Clamp to bounds
-        this.playerDuck.x = Phaser.Math.Clamp(this.playerDuck.x, 20, 620);
-        this.playerDuck.y = Phaser.Math.Clamp(this.playerDuck.y, 20, 340);
+        this.duckX = Phaser.Math.Clamp(this.duckX, 20, 620);
+        this.duckY = Phaser.Math.Clamp(this.duckY, 20, 340);
 
-        // Check proximity to zones
+        // Apply position (the bob tween only affects duckInner.y, not playerDuck.y)
+        this.playerDuck.x = this.duckX;
+        this.playerDuck.y = this.duckY;
+
+        // ─── Zone proximity ────────────────────────────────────
         let nearestZone = null;
         let nearestDist = Infinity;
 
         for (const zone of ZONES) {
-            const dx = this.playerDuck.x - zone.x;
-            const dy = this.playerDuck.y - zone.y;
+            const dx = this.duckX - zone.x;
+            const dy = this.duckY - zone.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < ZONE_RADIUS && dist < nearestDist) {
@@ -251,7 +296,6 @@ export class HubScene extends Scene {
             }
         }
 
-        // Emit zone events
         if (nearestZone !== this.currentZone) {
             if (this.currentZone) {
                 EventBus.emit('zone-leave', this.currentZone);
@@ -276,6 +320,10 @@ export class HubScene extends Scene {
                 gfx.strokeCircle(zone.x, zone.y, ZONE_RADIUS);
             }
         });
+    }
+
+    shutdown() {
+        EventBus.off('display-duck-changed', this._onDuckChanged, this);
     }
 
     changeScene(sceneName) {
