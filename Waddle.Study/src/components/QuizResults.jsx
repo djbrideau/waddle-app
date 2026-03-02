@@ -13,7 +13,7 @@ export default function QuizResults({ result }) {
         );
     }
 
-    const { correct, total, percentage, maxStreak, duckBucks, egg, goldenEgg, rewardType, setTitle } = result;
+    const { correct, total, percentage, maxStreak, duckBucks, egg, rewardType, setTitle } = result;
     const isPerfect = correct === total;
     const eggInfo = egg ? getEggById(egg.eggId) : null;
 
@@ -60,12 +60,6 @@ export default function QuizResults({ result }) {
                         </div>
                     )}
 
-                    {goldenEgg && (
-                        <div className="reward-item reward-golden">
-                            <span className="golden-egg-icon">&#11088;</span>
-                            <span>+1 Golden Egg (Perfect Score!)</span>
-                        </div>
-                    )}
                 </div>
 
                 <div className="results-actions">

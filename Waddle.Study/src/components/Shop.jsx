@@ -4,7 +4,7 @@ import { generateDailyShop, getTimeUntilRestock, formatCountdown } from '../data
 import { getEggById } from '../data/eggDatabase';
 
 export default function Shop() {
-    const { goBack, duckBucks, goldenEggs, purchaseEgg, navigate } = useGame();
+    const { goBack, duckBucks, purchaseEgg, navigate } = useGame();
     const [shop, setShop] = useState(null);
     const [countdown, setCountdown] = useState('');
     const [purchasing, setPurchasing] = useState(null);
@@ -48,7 +48,6 @@ export default function Shop() {
             {/* Currency display */}
             <div className="shop-currency">
                 <span className="currency-bucks">{duckBucks} Duck Bucks</span>
-                <span className="currency-eggs">{goldenEggs} Golden Eggs</span>
             </div>
 
             {/* Countdown to restock */}

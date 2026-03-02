@@ -1,16 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import DuckDisplay from './DuckDisplay';
+import { EventBus } from '../game/EventBus';
 
 export default function HubScreen() {
     const { displayName, role, logout } = useAuth();
     const {
-        navigate, duckBucks, goldenEggs, ducks, displayDuckId, setDisplayDuck,
+        navigate, duckBucks, ducks, displayDuckId, setDisplayDuck,
     } = useGame();
     const [showDuckSwap, setShowDuckSwap] = useState(false);
+    const [nearZone, setNearZone] = useState(null);
 
     const displayDuck = ducks.find(d => d.instanceId === displayDuckId);
+
+    // Listen for proximity events from Phaser HubScene
+    useEffect(() => {
+        function handleZoneEnter(zoneName) {
+            setNearZone(zoneName);
+        }
+        function handleZoneLeave() {
+            setNearZone(null);
+        }
+        function handleZoneActivate(zoneName) {
+            const screenMap = {
+                workshop: 'WORKSHOP',
+                dojo: 'DOJO',
+                atlas: 'ATLAS',
+                quizzes: 'QUESTION_SETS',
+                shop: 'SHOP',
+                collection: 'COLLECTION',
+                settings: 'SETTINGS',
+            };
+            const screen = screenMap[zoneName];
+            if (screen) navigate(screen);
+        }
+
+        EventBus.on('zone-enter', handleZoneEnter);
+        EventBus.on('zone-leave', handleZoneLeave);
+        EventBus.on('zone-activate', handleZoneActivate);
+
+        return () => {
+            EventBus.off('zone-enter', handleZoneEnter);
+            EventBus.off('zone-leave', handleZoneLeave);
+            EventBus.off('zone-activate', handleZoneActivate);
+        };
+    }, [navigate]);
 
     return (
         <div className="waddle-overlay hub-screen">
@@ -24,66 +59,30 @@ export default function HubScreen() {
                 <button className="hud-btn economy-btn" onClick={() => navigate('SHOP')}>
                     <span className="currency-display">
                         <span className="currency-bucks">{duckBucks} DB</span>
-                        <span className="currency-eggs">{goldenEggs} GE</span>
                     </span>
                 </button>
             </div>
 
-            {/* Center - Display Duck */}
-            <div className="hub-center">
-                <div className="hub-duck-container" onClick={() => setShowDuckSwap(true)}>
-                    {displayDuck ? (
-                        <DuckDisplay
-                            duckId={displayDuck.duckId}
-                            isDazzling={displayDuck.isDazzling}
-                            size={128}
-                        />
-                    ) : (
-                        <div className="hub-no-duck">
-                            <div className="placeholder-duck">?</div>
-                            <p>Tap to select a duck!</p>
-                        </div>
-                    )}
+            {/* Proximity prompt */}
+            {nearZone && (
+                <div className="proximity-prompt">
+                    <span className="proximity-label">
+                        Press SPACE or click to enter {nearZone.charAt(0).toUpperCase() + nearZone.slice(1)}
+                    </span>
                 </div>
-                <p className="hub-greeting">Welcome, {displayName}!</p>
-            </div>
+            )}
 
-            {/* Compass Rose - Four floating inner tubes */}
-            <div className="compass-rose">
-                <button
-                    className="compass-btn compass-top"
-                    onClick={() => navigate('WORKSHOP')}
-                >
-                    <span className="compass-icon">&#9998;</span>
-                    <span className="compass-label">Workshop</span>
-                </button>
-                <button
-                    className="compass-btn compass-bottom"
-                    onClick={() => navigate('DOJO')}
-                >
-                    <span className="compass-icon">&#127947;</span>
-                    <span className="compass-label">Duck Dojo</span>
-                </button>
-                <button
-                    className="compass-btn compass-left"
-                    onClick={() => navigate('ATLAS')}
-                >
-                    <span className="compass-icon">&#127758;</span>
-                    <span className="compass-label">Atlas</span>
-                </button>
-                <button
-                    className="compass-btn compass-right"
-                    onClick={() => navigate('QUESTION_SETS')}
-                >
-                    <span className="compass-icon">&#10067;</span>
-                    <span className="compass-label">Quizzes</span>
+            {/* Bottom-Left - Display Duck swap */}
+            <div className="hud-bottom-left">
+                <button className="hud-btn" onClick={() => setShowDuckSwap(true)} title="Change Duck">
+                    <span className="hud-icon">&#128038;</span>
                 </button>
             </div>
 
             {/* Bottom-Right - Collection Pond */}
             <div className="hud-bottom-right">
                 <button className="hud-btn" onClick={() => navigate('COLLECTION')} title="Collection Pond">
-                    <span className="hud-icon">&#128038;</span>
+                    <span className="hud-icon">&#127912;</span>
                 </button>
             </div>
 
