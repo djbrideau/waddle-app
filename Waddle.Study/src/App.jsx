@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext';
 import { useGame } from './contexts/GameContext';
 
 import LoginScreen from './components/LoginScreen';
+import SplashScreen from './components/SplashScreen';
 import RoleSelect from './components/RoleSelect';
 import HubScreen from './components/HubScreen';
 import Workshop from './components/Workshop';
@@ -20,6 +21,7 @@ import AtlasPlaceholder from './components/AtlasPlaceholder';
 
 const SCENE_MAP = {
     LOGIN: 'TitleScene',
+    SPLASH: 'TitleScene',
     ROLE_SELECT: 'TitleScene',
     HUB: 'HubScene',
     WORKSHOP: 'HubScene',
@@ -72,6 +74,8 @@ function App() {
         if (!userData) return <LoadingScreen />;
 
         switch (currentScreen) {
+            case 'SPLASH':
+                return <SplashScreen />;
             case 'HUB':
                 return <HubScreen />;
             case 'WORKSHOP':

@@ -269,11 +269,10 @@ select.waddle-input {
     border-radius: 8px;
 }
 
-.login-title {
-    font-family: var(--font-pixel);
-    font-size: 3rem;
-    color: var(--gold);
-    text-shadow: 0 0 30px rgba(251, 192, 45, 0.4), 3px 3px 0 var(--wood-dark);
+.login-logo {
+    width: 140px;
+    height: auto;
+    image-rendering: pixelated;
     margin-bottom: 8px;
 }
 
@@ -287,6 +286,42 @@ select.waddle-input {
 .login-btn {
     font-size: 0.7rem;
     padding: 12px 24px;
+}
+
+/* ─── Splash Screen ────────────────────────────────────────── */
+.splash-screen {
+    align-items: center;
+    justify-content: center;
+}
+
+.splash-content {
+    text-align: center;
+    padding: 30px;
+}
+
+.splash-logo {
+    width: 200px;
+    height: auto;
+    image-rendering: pixelated;
+    margin-bottom: 12px;
+}
+
+.splash-greeting {
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    color: var(--sand);
+    margin-bottom: 24px;
+}
+
+.splash-btn {
+    font-size: 1rem;
+    padding: 16px 40px;
+    animation: splash-pulse 2s ease-in-out infinite;
+}
+
+@keyframes splash-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 /* ─── Role Select ───────────────────────────────────────────── */
