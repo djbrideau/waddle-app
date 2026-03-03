@@ -8,7 +8,7 @@ const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
     const { userData, uid, refreshUser } = useAuth();
-    const [currentScreen, setCurrentScreen] = useState('HUB');
+    const [currentScreen, setCurrentScreen] = useState('SPLASH');
     const [screenData, setScreenData] = useState({});
     const screenStackRef = useRef([]);
     const currentScreenRef = useRef(currentScreen);

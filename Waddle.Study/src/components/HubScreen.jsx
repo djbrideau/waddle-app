@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import DuckDisplay from './DuckDisplay';
 import { EventBus } from '../game/EventBus';
-import { getDuckById } from '../data/duckDatabase';
 
 export default function HubScreen() {
     const { displayName } = useAuth();
@@ -15,16 +14,15 @@ export default function HubScreen() {
 
     const displayDuck = ducks.find(d => d.instanceId === displayDuckId);
 
+    // Extract first name from displayName
+    const firstName = (displayName || 'Duckling').split(' ')[0];
+
     // Sync display duck appearance to Phaser on mount and when it changes
     useEffect(() => {
-        if (displayDuck) {
-            const dbDuck = getDuckById(displayDuck.duckId);
-            EventBus.emit('display-duck-changed', {
-                color: dbDuck?.color || displayDuck.color || '#ffeb3b',
-                name: displayDuck.name || 'Duck',
-            });
-        }
-    }, [displayDuck?.instanceId]);
+        EventBus.emit('display-duck-changed', {
+            name: firstName,
+        });
+    }, [displayDuck?.instanceId, firstName]);
 
     // Listen for proximity events from Phaser HubScene
     useEffect(() => {

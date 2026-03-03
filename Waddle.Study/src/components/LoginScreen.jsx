@@ -6,7 +6,11 @@ export default function LoginScreen() {
     return (
         <div className="waddle-overlay login-screen">
             <div className="login-content">
-                <h1 className="login-title">WADDLE</h1>
+                <img
+                    src="assets/Assets/Logos/BetaWaddleLogo.png"
+                    alt="Waddle"
+                    className="login-logo"
+                />
                 <p className="login-subtitle">Learn. Play. Collect.</p>
 
                 <button className="waddle-btn waddle-btn-primary login-btn" onClick={login}>
